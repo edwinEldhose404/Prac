@@ -1,0 +1,77 @@
+1.
+SELECT c_name FROM orders GROUP BY c_name ORDER BY SUM(t_am) DESC LIMIT 1;
+
+2.
+SELECT DISTINCT c1.c_name FROM customers c1
+JOIN orders o1 ON c1.c_id = o1.c_id
+JOIN products p1 ON o1.p_id = p1.p_id
+WHERE p1.city = (SELECT city from customers where name = 'Rahul')
+
+3.
+SELECT DISTINCT c.c_name
+FROM customers c
+JOIN orders o ON c.c_id = o.c_id
+JOIN products p ON o.p_id = p.p_id
+WHERE p.price > (
+    SELECT AVG(p2.price)
+    FROM products p2
+    JOIN orders o2 ON p2.p_id = o2.p_id
+    WHERE o2.c_id = c.c_id
+);
+
+4.
+SELECT c.c_name, SUM(p.price) AS t_am
+FROM customers c
+JOIN orders o ON c.c_id = o.c_id
+JOIN products p ON o.p_id = p.p_id
+WHERE p.price > (
+    SELECT AVG(p2.price)
+    FROM products p2
+    WHERE p2.city = c.city
+)
+GROUP BY c.c_name;
+
+5.
+SELECT c.c_name, COALESCE(SUM(o.t_am), 0) AS total_spent
+FROM customers c
+LEFT JOIN orders o ON c.c_id = o.c_id
+GROUP BY c.c_name;
+
+6.
+SELECT c.c_name, COALESCE(o.order_details, 'No order') AS order_details
+FROM customers c
+LEFT JOIN orders o ON c.c_id = o.c_id;
+
+7.
+SELECT product_name, price, RANK() OVER (ORDER BY price DESC) AS product_rank
+FROM products;
+
+8.
+SELECT product_name, price, DENSE_RANK() OVER (ORDER BY price DESC) AS dense_product_rank
+FROM products;
+
+9.
+SELECT product_name, price, ROW_NUMBER() OVER (ORDER BY price DESC) AS row_number
+FROM products;
+.10.
+SELECT product_name, price, 
+       (COUNT(*) OVER (ORDER BY price) * 1.0) / COUNT(*) OVER () AS cumulative_distribution
+FROM products;
+
+11.
+WITH RankedProducts AS (
+    SELECT product_name, price, 
+           LAG(price) OVER (ORDER BY price) AS previous_price
+    FROM products
+)
+SELECT product_name, price, previous_price
+FROM RankedProducts;
+
+12.
+WITH RankedProducts AS (
+    SELECT product_name, price, 
+           LEAD(price) OVER (ORDER BY price) AS next_price
+    FROM products
+)
+SELECT product_name, price, next_price
+FROM RankedProducts;
