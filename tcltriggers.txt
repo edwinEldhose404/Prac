@@ -1,0 +1,63 @@
+1. commit
+2.rollback
+3. a. save point a 
+   b. rollback to a
+
+Triggers
+
+1.
+
+CREATE TRIGGER order_comp
+AFTER UPDATE ON orders
+FOR EACH ROW
+BEGIN
+    IF NEW.status = 'completed' THEN
+        UPDATE payments SET status = 'completed' WHERE order_id = NEW.order_id;
+    END IF;
+END;
+
+2.
+
+CREATE TRIGGER stock_avail
+BEFORE INSERT ON orders
+FOR EACH ROW
+BEGIN
+    DECLARE available_stock INT;
+    SELECT stock_quantity INTO available_stock FROM products WHERE product_id = NEW.product_id;
+    IF available_stock < NEW.quantity THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this order';
+    END IF;
+END;
+
+3.
+
+CREATE TRIGGER upd_stock
+AFTER INSERT ON orders
+FOR EACH ROW
+BEGIN
+    UPDATE products 
+    SET stock_quantity = stock_quantity - NEW.quantity
+    WHERE product_id = NEW.product_id;
+END;
+
+Views
+
+1.
+
+CREATE VIEW customer_orders AS
+SELECT c.customer_id, c.customer_name, o.order_id, o.order_date
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id;
+
+2.
+
+CREATE OR REPLACE VIEW payment_order_customer AS
+SELECT p.payment_id, p.amount, p.payment_date, o.order_id, o.order_date, c.customer_name
+FROM payments p
+JOIN orders o ON p.order_id = o.order_id
+JOIN customers c ON o.customer_id = c.customer_id;
+
+3.
+
+DROP VIEW IF EXISTS customer_orders;
+
